@@ -16,12 +16,6 @@
         :scale="scale"
         :paht-color="pahtColor"></FlowChartPath>
 
-      <circle
-        r="4"
-        fill="#616161"
-        transform="translate(100, 100)"
-        @click="test"></circle>
-
       <FlowChartNode
         class="flow-chart-node"
         v-for="(item,index) in nodes"
@@ -39,12 +33,21 @@
         <slot :node="item" name="content" pointer-events="none"></slot>
       </FlowChartNode>
     </svg>
+    <FlowChartThumbnail
+      :scale="scale"
+      :max-width="maxWidth"
+      :max-height="maxHeight"
+      :view-width="width"
+      :view-height="height"
+      :offset-x="svgOffsetX"
+      :offset-y="svgOffsetY"></FlowChartThumbnail>
   </div>
 </template>
 
 <script>
 import FlowChartNode from './components/FlowChartNode'
 import FlowChartPath from './components/FlowChartPath'
+import FlowChartThumbnail from './components/FlowChartThumbnail'
 import getPathPoints from './lib/getPathPoints.js'
 
 export default {
@@ -59,17 +62,26 @@ export default {
       default: '#b39ddb'
     },
     width: {
-      type: String,
-      default: '640'
+      type: Number,
+      default: 640
     },
     height: {
-      type: String,
-      default: '640'
+      type: Number,
+      default: 640
+    },
+    maxWidth: {
+      type: Number,
+      default: 1000
+    },
+    maxHeight: {
+      type: Number,
+      default: 1000
     }
   },
   components: {
     FlowChartNode,
-    FlowChartPath
+    FlowChartPath,
+    FlowChartThumbnail
   },
   data() {
     return {
@@ -122,9 +134,23 @@ export default {
       if (!(this.scale >= 0.5 && this.scale <= 2)) return
       const deltaS = e.wheelDeltaY / 1200
       const targetS = this.scale - deltaS
-      let finalS = targetS > 2 ? 2 : targetS
+
+      const maxScaleX = this.maxWidth / this.width
+      const maxScaleY = this.maxHeight / this.height
+
+      const minScale = Math.min(maxScaleX, maxScaleY)
+
+      let finalS = targetS > minScale ? minScale : targetS
       finalS = finalS < 0.5 ? 0.5 : finalS
       this.scale = finalS
+
+      // 防止放大的时候溢出
+      if ((this.svgOffsetX + this.width) * finalS > this.maxWidth) {
+        this.svgOffsetX = this.maxWidth / finalS - this.width
+      }
+      if ((this.svgOffsetY + this.height) * finalS > this.maxHeight) {
+        this.svgOffsetY = this.maxHeight / finalS - this.height
+      }
     },
     handleMouseDown(e) {
       this.inGrab = true
@@ -146,17 +172,17 @@ export default {
         let targetX = oriSvgOffsetX + oriOffsetX - offsetX
         let targetY = oriSvgOffsetY + oriOffsetY - offsetY
 
-        if (targetX * this.scale > 500) {
-          targetX = 500 / this.scale
+        if ((targetX + this.width) * this.scale > this.maxWidth) {
+          targetX = this.maxWidth / this.scale - this.width
         }
-        if (targetY * this.scale > 500) {
-          targetY = 500 / this.scale
+        if ((targetY + this.height) * this.scale > this.maxHeight) {
+          targetY = this.maxHeight / this.scale - this.height
         }
-        if (targetX * this.scale < -500) {
-          targetX = -500 / this.scale
+        if (targetX * this.scale < 0) {
+          targetX = 0
         }
-        if (targetY * this.scale < -500) {
-          targetY = -500 / this.scale
+        if (targetY * this.scale < 0) {
+          targetY = 0
         }
         this.svgOffsetX = targetX
         this.svgOffsetY = targetY
@@ -164,9 +190,6 @@ export default {
 
       $svgContainer.addEventListener('mousemove', handleMouseMove)
       $svgContainer.addEventListener('mouseup', handleMouseUp)
-    },
-    test(e) {
-      console.log(e)
     }
   }
 }
@@ -174,6 +197,11 @@ export default {
 
 <style scoped>
 .flow-chart {
-  overflow: hidden;
+  position: relative;
+}
+.flow-chart-thumbnail {
+  position: absolute;
+  right: 10px;
+  top: 10px;
 }
 </style>

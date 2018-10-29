@@ -4,7 +4,7 @@
     :transform="`translate(${currentNode.x}, ${currentNode.y})`">
     <g v-if="isLinkHandler">
       <circle
-        r="4"
+        :r="8*scale"
         fill="#616161"
         pointer-events="none"></circle>
     </g>
@@ -25,7 +25,7 @@
       </rect>
       <slot pointer-events="none"></slot>
       <circle
-        r="4"
+        :r="8*scale"
         :stroke="currentNode.indicatorColor||'#1b5e20'"
         :fill="currentNode.indicatorColor||'#1b5e20'"
         cursor="pointer"
@@ -64,7 +64,7 @@ export default {
       default: 0
     }
   },
-  data () {
+  data() {
     return {
       currentNode: {}
     }
@@ -72,18 +72,22 @@ export default {
   watch: {
     node: {
       immediate: true,
-      handler (node) {
+      handler(node) {
         this.currentNode = node
       }
     }
   },
   methods: {
-    handleStartLink(e, currentNode, offset = { x: 0, y: 0 }) {
+    handleStartLink(e, currentNode) {
       const $svgContainer = this.$parent.$svgContainer
 
       this.$emit('in-link-change', true)
       const { offsetX, offsetY } = e
-      const holder = this.createPlaceholder(currentNode.id, offsetX, offsetY)
+      const holder = this.createPlaceholder(
+        currentNode.id,
+        (offsetX + this.viewOffseX) * this.scale,
+        (offsetY + this.viewOffseY) * this.scale
+      )
 
       const handleMouseUp = e => {
         $svgContainer.removeEventListener('mousemove', handleMouseMove)
@@ -97,7 +101,10 @@ export default {
       }
 
       const handleMouseMove = e => {
-        this.handleMouseMove(e, holder, offset)
+        this.handleMouseMove(e, holder, {
+          x: this.viewOffseX,
+          y: this.viewOffseY
+        })
       }
 
       $svgContainer.addEventListener('mousemove', handleMouseMove)
@@ -131,7 +138,7 @@ export default {
       currentNode.x = (offsetX + offset.x) * this.scale
       currentNode.y = (offsetY + offset.y) * this.scale
     },
-    createPlaceholder (prevId, x, y) {
+    createPlaceholder(prevId, x, y) {
       const holder = {
         id: Math.random() + '',
         prevId,

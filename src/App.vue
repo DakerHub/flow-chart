@@ -1,10 +1,8 @@
 <template>
   <div id="app">
     <FlowChart
-      style="border:thin solid #1a237e;height:640px;"
+      style="border:thin solid #1a237e;height:640px;width:640px;"
       :value="rects"
-      width="100%"
-      height="100%"
       paht-color="#4CAF50">
       <template slot-scope="{node}" slot="content">
         <text
@@ -35,11 +33,11 @@ export default {
       nodes: data.data.todoList
     }
   },
-  created () {
+  created() {
     // this.formatNodes()
   },
   methods: {
-    addRandom () {
+    addRandom() {
       this.rects.push({
         id: Math.random() + '',
         x: 250,
@@ -49,7 +47,7 @@ export default {
         text: '1234'
       })
     },
-    formatNodes () {
+    formatNodes() {
       const nodes = this.nodes.map(node => {
         const { _id, conditions, content } = node
         const prevNode = conditions.find(c => c.type === 'Process')
