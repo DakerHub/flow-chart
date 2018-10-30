@@ -9,6 +9,13 @@
       @mousedown.stop="handleMouseDown"
       @mousewheel="handleMousewheel"
       @click.left="handleContainerClick">
+      <FlowChartGrid
+        :row="50"
+        :col="50"
+        :maxWidth="maxWidth"
+        :maxHeight="maxHeight"
+        :blocks="blocks"></FlowChartGrid>
+
       <FlowChartPath
         class="flow-chart-path"
         v-for="(item,index) in paths"
@@ -65,7 +72,9 @@
 import FlowChartNode from './components/FlowChartNode'
 import FlowChartPath from './components/FlowChartPath'
 import FlowChartThumbnail from './components/FlowChartThumbnail'
+import FlowChartGrid from './components//FlowChartGrid'
 import getPathPoints from './lib/getPathPoints.js'
+import Grid from '../../utils/Grid.js'
 
 export default {
   name: 'FlowChart',
@@ -102,7 +111,8 @@ export default {
   components: {
     FlowChartNode,
     FlowChartPath,
-    FlowChartThumbnail
+    FlowChartThumbnail,
+    FlowChartGrid
   },
   data() {
     return {
@@ -114,7 +124,8 @@ export default {
       inLink: false,
       $svgContainer: null,
       currentPathId: '',
-      currentNodeId: ''
+      currentNodeId: '',
+      blocks: []
     }
   },
   watch: {
@@ -130,6 +141,11 @@ export default {
       return getPathPoints(this.nodes)
     }
   },
+  created() {
+    const grid = new Grid(50, 50, this.maxWidth, this.maxHeight)
+    this.blocks = grid.addBlocks(this.nodes)
+    console.log(grid.getGrid())
+  },
   mounted() {
     this.$svgContainer = this.$el.querySelector('.svg-container')
     this.bindHotKey()
@@ -144,7 +160,7 @@ export default {
         this.nodes.splice(idx, 1)
       }
     },
-    bindHotKey () {
+    bindHotKey() {
       document.addEventListener('keyup', e => {
         if (e.key === 'Delete') {
           if (this.currentPathId) {
@@ -156,14 +172,14 @@ export default {
         }
       })
     },
-    deleteCurrentPath () {
+    deleteCurrentPath() {
       const currentPath = this.paths.find(p => p.id === this.currentPathId)
       if (!currentPath) return
 
       const prevId = currentPath.prevId
       this.$emit('delete-path', this.currentPathId, prevId)
     },
-    deleteCurrentNode () {
+    deleteCurrentNode() {
       this.$emit('delete-node', this.currentNodeId)
     },
     linkNode(targetNodeId, currentNodeId) {
@@ -233,19 +249,19 @@ export default {
       $svgContainer.addEventListener('mousemove', handleMouseMove)
       $svgContainer.addEventListener('mouseup', handleMouseUp)
     },
-    handleClickPath (item) {
+    handleClickPath(item) {
       this.currentPathId = item.id
     },
-    handleClickNode (item) {
+    handleClickNode(item) {
       this.currentNodeId = item.id
       this.currentPathId = ''
       this.$emit('current-node-change', item.id)
     },
-    handleContainerClick () {
+    handleContainerClick() {
       this.currentPathId = ''
       this.currentNodeId = ''
     },
-    handleResetScale () {
+    handleResetScale() {
       this.scale = 1
       this.svgOffsetX = 0
       this.svgOffsetY = 0
@@ -258,28 +274,28 @@ export default {
 .flow-chart {
   position: relative;
 }
-.flow-chart-tools{
+.flow-chart-tools {
   position: absolute;
   right: 10px;
   top: 10px;
   text-align: right;
 }
-.flow-chart-tool{
+.flow-chart-tool {
   margin-bottom: 10px;
 }
 
-.flow-chart-reset-scale{
+.flow-chart-reset-scale {
   border: thin solid #ccc;
   border-radius: 4px;
-  background-color: rgba(255, 255, 255, .8);
+  background-color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
   outline: none;
-  transition: all .3s;
+  transition: all 0.3s;
 }
-.flow-chart-reset-scale:hover{
-  background-color: rgba(0, 0, 0, .1);
+.flow-chart-reset-scale:hover {
+  background-color: rgba(0, 0, 0, 0.1);
 }
-.flow-chart-reset-scale:active{
-  background-color: rgba(0, 0, 0, .2);
+.flow-chart-reset-scale:active {
+  background-color: rgba(0, 0, 0, 0.2);
 }
 </style>

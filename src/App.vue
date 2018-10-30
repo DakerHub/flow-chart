@@ -55,7 +55,6 @@
 import FlowChart from './components/FlowChart/Index'
 import data from './assets/data.js'
 import dataFormatted from './assets/dataFormatted.js'
-import Grid from './utils/Grid.js'
 
 export default {
   name: 'App',
@@ -69,7 +68,7 @@ export default {
     }
   },
   filters: {
-    textEllipsis (text, fontSize, maxWidth) {
+    textEllipsis(text, fontSize, maxWidth) {
       if (!text) return ''
       const doubleCharMatcher = /[^x00-xff]/
       let formatText = text
@@ -80,25 +79,19 @@ export default {
           formatText = text.substring(0, i) + '...'
           break
         }
-        const char = textArr[i];
+        const char = textArr[i]
         if (doubleCharMatcher.test(char)) {
           totalWidth += fontSize
         } else {
-          totalWidth += (fontSize / 2)
+          totalWidth += fontSize / 2
         }
-        
       }
       return formatText
     }
   },
-  created() {
-    // this.formatNodes()
-    const grid = new Grid(10, 10)
-    console.log(grid.getGrid())
-  },
   methods: {
     addRandom() {
-      const text = prompt("Say Something", "")
+      const text = prompt('Say Something', '')
       this.rects.push({
         id: Math.random() + '',
         x: 0,
@@ -126,14 +119,14 @@ export default {
       })
       this.rects = nodes
     },
-    handleDeletePath (nodeId, prevNodeId) {
+    handleDeletePath(nodeId, prevNodeId) {
       const node = this.rects.find(n => n.id === nodeId)
       if (node) {
         node.prevId = null
       }
       // 映射到process里面就是前置条件去掉prevNodeId
     },
-    handleDeleteNode (nodeId) {
+    handleDeleteNode(nodeId) {
       const idx = this.rects.findIndex(n => n.id === nodeId)
       if (idx === -1) return
       this.rects.forEach(node => {
@@ -144,7 +137,7 @@ export default {
       this.rects.splice(idx, 1)
       // 删除process
     },
-    handleToolClick (operator, node) {
+    handleToolClick(operator, node) {
       alert(operator)
     }
   }
