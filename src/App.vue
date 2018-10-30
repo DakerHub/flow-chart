@@ -55,6 +55,7 @@
 import FlowChart from './components/FlowChart/Index'
 import data from './assets/data.js'
 import dataFormatted from './assets/dataFormatted.js'
+import Grid from './utils/Grid.js'
 
 export default {
   name: 'App',
@@ -92,6 +93,8 @@ export default {
   },
   created() {
     // this.formatNodes()
+    const grid = new Grid(10, 10)
+    console.log(grid.getGrid())
   },
   methods: {
     addRandom() {
