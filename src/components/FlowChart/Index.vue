@@ -41,7 +41,8 @@
         @remove-node="removeNode"
         @link-node="linkNode"
         @in-link-change="val => inLink = val"
-        @click.native.stop="handleClickNode(item)">
+        @click.native.stop="handleClickNode(item)"
+        @node-position-change="nodePositionChange">
         <slot :node="item" name="content" pointer-events="none"></slot>
       </FlowChartNode>
     </svg>
@@ -125,7 +126,8 @@ export default {
       $svgContainer: null,
       currentPathId: '',
       currentNodeId: '',
-      blocks: []
+      blocks: [],
+      grid: null
     }
   },
   watch: {
@@ -142,9 +144,8 @@ export default {
     }
   },
   created() {
-    const grid = new Grid(50, 50, this.maxWidth, this.maxHeight)
-    this.blocks = grid.addBlocks(this.nodes)
-    console.log(grid.getGrid())
+    this.grid = new Grid(50, 50, this.maxWidth, this.maxHeight)
+    this.blocks = this.grid.addBlocks(this.nodes)
   },
   mounted() {
     this.$svgContainer = this.$el.querySelector('.svg-container')
@@ -187,6 +188,11 @@ export default {
       if (targetNode) {
         targetNode.prevId = currentNodeId
       }
+    },
+    nodePositionChange(node) {
+      console.log(node)
+      // this.grid.clearBlocks()
+      this.blocks = this.grid.addBlocks([node])
     },
     handleMousewheel(e) {
       if (!(this.scale >= 0.5 && this.scale <= 2)) return

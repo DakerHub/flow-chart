@@ -91,7 +91,7 @@ export default {
     }
   },
   computed: {
-    inSelect () {
+    inSelect() {
       return this.currentNodeId === this.node.id
     }
   },
@@ -148,6 +148,7 @@ export default {
       const $svgContainer = this.$parent.$svgContainer
 
       const handleMouseUp = () => {
+        this.$emit('node-position-change', currentNode)
         $svgContainer.removeEventListener('mousemove', handleMouseMove)
         $svgContainer.removeEventListener('mouseup', handleMouseUp)
       }
@@ -182,7 +183,7 @@ export default {
 </script>
 
 <style scoped>
-.is-active:not(.in-select){
+.is-active:not(.in-select) {
   display: none;
 }
 .in-link:hover .is-active {

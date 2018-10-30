@@ -25,8 +25,10 @@ export default class Grid {
   getGrid() {
     return this.grid
   }
+  clearBlocks() {
+    this.blocksPosition = []
+  }
   addBlocks(blocks) {
-    const blocksPosition = []
     blocks.forEach(block => {
       const { x, y, width, height } = block
       const ltPosition = this.getPositionOf({
@@ -61,7 +63,7 @@ export default class Grid {
             maxCol = p1.col
           }
           for (let i = 0; i < maxCol - minCol; i++) {
-            blocksPosition.push({
+            this.blocksPosition.push({
               row: p1.row,
               col: minCol + i
             })
@@ -75,7 +77,7 @@ export default class Grid {
             maxRow = p1.row
           }
           for (let i = 0; i < maxRow - minRow + 1; i++) {
-            blocksPosition.push({
+            this.blocksPosition.push({
               row: minRow + i,
               col: p1.col
             })
@@ -84,8 +86,7 @@ export default class Grid {
         return p2
       })
     })
-    this.blocksPosition = blocksPosition
-    return blocksPosition
+    return this.blocksPosition
   }
   getPositionOf(point) {
     return {
