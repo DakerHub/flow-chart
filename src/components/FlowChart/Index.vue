@@ -4,17 +4,20 @@
       class="svg-container"
       :width="width"
       :height="height"
-      :viewBox="`${svgOffsetX * scale} ${svgOffsetY * scale} ${svgWidth * scale} ${svgHeight * scale}`"
+      :viewBox="`${svgOffsetX * scale} ${svgOffsetY * scale} ${width * scale} ${height * scale}`"
       :cursor="inGrab?'grabbing':'grab'"
-      @mousedown="handleMouseDown"
-      @mousewheel="handleMousewheel">
+      @mousedown.stop="handleMouseDown"
+      @mousewheel="handleMousewheel"
+      @click.left="handleContainerClick">
       <FlowChartPath
         class="flow-chart-path"
         v-for="(item,index) in paths"
         :key="index"
         :path="item"
         :scale="scale"
-        :paht-color="pahtColor"></FlowChartPath>
+        :path-color="pathColor"
+        :current-path-id="currentPathId"
+        @click.native.stop="handleClickPath(item)"></FlowChartPath>
 
       <FlowChartNode
         class="flow-chart-node"
@@ -26,21 +29,35 @@
         :view-offse-x="svgOffsetX"
         :view-offse-y="svgOffsetY"
         :is-link-handler="item.isLinkHandler"
+        :current-node-id="currentNodeId"
         @create-placeholder="createPlaceholder"
         @remove-node="removeNode"
         @link-node="linkNode"
-        @in-link-change="val => inLink = val">
+        @in-link-change="val => inLink = val"
+        @click.native.stop="handleClickNode(item)">
         <slot :node="item" name="content" pointer-events="none"></slot>
       </FlowChartNode>
     </svg>
-    <FlowChartThumbnail
-      :scale="scale"
-      :max-width="maxWidth"
-      :max-height="maxHeight"
-      :view-width="width"
-      :view-height="height"
-      :offset-x="svgOffsetX"
-      :offset-y="svgOffsetY"></FlowChartThumbnail>
+
+    <div
+      class="flow-chart-tools">
+      <FlowChartThumbnail
+        class="flow-chart-tool"
+        v-if="tools.includes('thumbnail')"
+        :scale="scale"
+        :max-width="maxWidth"
+        :max-height="maxHeight"
+        :view-width="width"
+        :view-height="height"
+        :offset-x="svgOffsetX"
+        :offset-y="svgOffsetY">
+      </FlowChartThumbnail>
+
+      <button
+        v-if="tools.includes('resetScale')"
+        class="flow-chart-tool flow-chart-reset-scale"
+        @click="handleResetScale">重置缩放</button>
+    </div>
   </div>
 </template>
 
@@ -57,7 +74,7 @@ export default {
       type: Array,
       default: () => []
     },
-    pahtColor: {
+    pathColor: {
       type: String,
       default: '#b39ddb'
     },
@@ -76,6 +93,10 @@ export default {
     maxHeight: {
       type: Number,
       default: 1000
+    },
+    tools: {
+      type: Array,
+      default: () => ['thumbnail', 'resetScale']
     }
   },
   components: {
@@ -87,13 +108,13 @@ export default {
     return {
       nodes: [],
       scale: 1,
-      svgHeight: 0,
-      svgWidth: 0,
       svgOffsetX: 0,
       svgOffsetY: 0,
       inGrab: false,
       inLink: false,
-      $svgContainer: null
+      $svgContainer: null,
+      currentPathId: '',
+      currentNodeId: ''
     }
   },
   watch: {
@@ -111,8 +132,7 @@ export default {
   },
   mounted() {
     this.$svgContainer = this.$el.querySelector('.svg-container')
-    this.svgHeight = this.$svgContainer.clientHeight
-    this.svgWidth = this.$svgContainer.clientWidth
+    this.bindHotKey()
   },
   methods: {
     createPlaceholder(placeholder) {
@@ -123,6 +143,28 @@ export default {
       if (idx !== -1) {
         this.nodes.splice(idx, 1)
       }
+    },
+    bindHotKey () {
+      document.addEventListener('keyup', e => {
+        if (e.key === 'Delete') {
+          if (this.currentPathId) {
+            return this.deleteCurrentPath()
+          }
+          if (this.currentNodeId) {
+            return this.deleteCurrentNode()
+          }
+        }
+      })
+    },
+    deleteCurrentPath () {
+      const currentPath = this.paths.find(p => p.id === this.currentPathId)
+      if (!currentPath) return
+
+      const prevId = currentPath.prevId
+      this.$emit('delete-path', this.currentPathId, prevId)
+    },
+    deleteCurrentNode () {
+      this.$emit('delete-node', this.currentNodeId)
     },
     linkNode(targetNodeId, currentNodeId) {
       const targetNode = this.nodes.find(r => r.id === targetNodeId)
@@ -190,6 +232,23 @@ export default {
 
       $svgContainer.addEventListener('mousemove', handleMouseMove)
       $svgContainer.addEventListener('mouseup', handleMouseUp)
+    },
+    handleClickPath (item) {
+      this.currentPathId = item.id
+    },
+    handleClickNode (item) {
+      this.currentNodeId = item.id
+      this.currentPathId = ''
+      this.$emit('current-node-change', item.id)
+    },
+    handleContainerClick () {
+      this.currentPathId = ''
+      this.currentNodeId = ''
+    },
+    handleResetScale () {
+      this.scale = 1
+      this.svgOffsetX = 0
+      this.svgOffsetY = 0
     }
   }
 }
@@ -199,9 +258,28 @@ export default {
 .flow-chart {
   position: relative;
 }
-.flow-chart-thumbnail {
+.flow-chart-tools{
   position: absolute;
   right: 10px;
   top: 10px;
+  text-align: right;
+}
+.flow-chart-tool{
+  margin-bottom: 10px;
+}
+
+.flow-chart-reset-scale{
+  border: thin solid #ccc;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, .8);
+  cursor: pointer;
+  outline: none;
+  transition: all .3s;
+}
+.flow-chart-reset-scale:hover{
+  background-color: rgba(0, 0, 0, .1);
+}
+.flow-chart-reset-scale:active{
+  background-color: rgba(0, 0, 0, .2);
 }
 </style>

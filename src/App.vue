@@ -3,12 +3,46 @@
     <FlowChart
       style="border:thin solid #1a237e;height:640px;width:640px;"
       :value="rects"
-      paht-color="#4CAF50">
+      path-color="#4CAF50"
+      :tools="['thumbnail', 'resetScale']"
+      @delete-path="handleDeletePath"
+      @delete-node="handleDeleteNode">
       <template slot-scope="{node}" slot="content">
-        <text
-          pointer-events="none"
-          dx="10"
-          dy="24">{{node.text}}</text>
+        <g
+          style="font-family:Times New Roman,sans-serif;font-weight:bold;">
+          <title>{{node.text}}</title>
+          <text
+            pointer-events="none"
+            dx="100"
+            dy="24"
+            text-anchor="middle">
+            {{node.text|textEllipsis(14, node.width - 20 )}}
+          </text>
+        </g>
+        <image
+          width="20"
+          height="20"
+          x="20"
+          y="30"
+          cursor="pointer"
+          xlink:href="https://famaomao.oss-cn-shenzhen.aliyuncs.com/fff/public/static/svg/setting.svg"
+          @click="handleToolClick('setting', node)"/>
+        <image
+          width="20"
+          height="20"
+          x="50"
+          y="30"
+          cursor="pointer"
+          xlink:href="https://famaomao.oss-cn-shenzhen.aliyuncs.com/fff/public/static/svg/editting.svg"
+          @click="handleToolClick('rename', node)"/>
+        <image
+          width="20"
+          height="20"
+          x="80"
+          y="30"
+          cursor="pointer"
+          xlink:href="https://famaomao.oss-cn-shenzhen.aliyuncs.com/fff/public/static/svg/delete.svg"
+          @click="handleToolClick('delete', node)"/>
       </template>
     </FlowChart>
     <button
@@ -33,18 +67,42 @@ export default {
       nodes: data.data.todoList
     }
   },
+  filters: {
+    textEllipsis (text, fontSize, maxWidth) {
+      if (!text) return ''
+      const doubleCharMatcher = /[^x00-xff]/
+      let formatText = text
+      let totalWidth = 0
+      const textArr = text.split('')
+      for (let i = 0; i < textArr.length; i++) {
+        if (totalWidth > maxWidth - 40) {
+          formatText = text.substring(0, i) + '...'
+          break
+        }
+        const char = textArr[i];
+        if (doubleCharMatcher.test(char)) {
+          totalWidth += fontSize
+        } else {
+          totalWidth += (fontSize / 2)
+        }
+        
+      }
+      return formatText
+    }
+  },
   created() {
     // this.formatNodes()
   },
   methods: {
     addRandom() {
+      const text = prompt("Say Something", "")
       this.rects.push({
         id: Math.random() + '',
-        x: 250,
-        y: 450,
+        x: 0,
+        y: 0,
         height: 60,
-        width: 100,
-        text: '1234'
+        width: 200,
+        text: text
       })
     },
     formatNodes() {
@@ -64,6 +122,27 @@ export default {
         }
       })
       this.rects = nodes
+    },
+    handleDeletePath (nodeId, prevNodeId) {
+      const node = this.rects.find(n => n.id === nodeId)
+      if (node) {
+        node.prevId = null
+      }
+      // 映射到process里面就是前置条件去掉prevNodeId
+    },
+    handleDeleteNode (nodeId) {
+      const idx = this.rects.findIndex(n => n.id === nodeId)
+      if (idx === -1) return
+      this.rects.forEach(node => {
+        if (node.prevId === nodeId) {
+          node.prevId = null
+        }
+      })
+      this.rects.splice(idx, 1)
+      // 删除process
+    },
+    handleToolClick (operator, node) {
+      alert(operator)
     }
   }
 }

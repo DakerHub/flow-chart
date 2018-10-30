@@ -2,6 +2,19 @@
   <g
     :class="inLink?'in-link':''"
     :transform="`translate(${currentNode.x}, ${currentNode.y})`">
+    <g
+      :class="{'is-active':true,'in-select':inSelect}">
+      <rect
+        :width="currentNode.width + 6"
+        :height="currentNode.height + 6"
+        rx="8"
+        ry="8"
+        :stroke="inSelect?'#FFEB3B':'#ccc'"
+        stroke-width="4"
+        stroke-linejoin="round"
+        fill="rgba(255,255,255,0)"
+        transform="translate(-3, -3)"></rect>
+    </g>
     <g v-if="isLinkHandler">
       <circle
         :r="8*scale"
@@ -12,7 +25,7 @@
       v-else
       style="user-select: none;"
       cursor="move"
-      @mousedown.stop="e => handleMouseDown(e, currentNode)">
+      @mousedown.left.stop="e => handleMouseDown(e, currentNode)">
       <rect
         class="g-box"
         :data-id="currentNode.id"
@@ -21,16 +34,20 @@
         rx="4"
         ry="4"
         :stroke="currentNode.borderColor||'#2e7d32'"
+        stroke-width="2"
+        stroke-linejoin="round"
         fill="rgba(255,255,255,0)">
       </rect>
       <slot pointer-events="none"></slot>
-      <circle
-        :r="8*scale"
-        :stroke="currentNode.indicatorColor||'#1b5e20'"
-        :fill="currentNode.indicatorColor||'#1b5e20'"
+      <rect
+        :width="8*scale"
+        :height="8*scale"
+        :stroke="currentNode.indicatorColor||'#2196F3'"
+        :fill="currentNode.indicatorColor||'#2196F3'"
         cursor="pointer"
-        :transform="`translate(${currentNode.width/2}, ${currentNode.height})`"
-        @mousedown.stop="e => handleStartLink(e, currentNode)"></circle>
+        :transform="`translate(${currentNode.width/2-4*scale}, ${currentNode.height-1})`"
+        @mousedown.stop="e => handleStartLink(e, currentNode)">
+      </rect>
     </g>
   </g>
 </template>
@@ -51,6 +68,10 @@ export default {
       type: Object,
       default: () => {}
     },
+    currentNodeId: {
+      type: String,
+      default: ''
+    },
     scale: {
       type: Number,
       default: 1
@@ -67,6 +88,11 @@ export default {
   data() {
     return {
       currentNode: {}
+    }
+  },
+  computed: {
+    inSelect () {
+      return this.currentNodeId === this.node.id
     }
   },
   watch: {
@@ -156,8 +182,10 @@ export default {
 </script>
 
 <style scoped>
-.in-link .g-box:hover {
-  /* outline: 2px solid #ccc; */
-  box-shadow: 0px 0px 2px 4px black;
+.is-active:not(.in-select){
+  display: none;
+}
+.in-link:hover .is-active {
+  display: block;
 }
 </style>

@@ -2,9 +2,11 @@
   <g>
     <path
       :d="getSvgPath(currentPath.start, currentPath.end)"
-      :stroke="pahtColor"
-      stroke-width="1"
-      fill="none"></path>
+      :stroke="inSelect?'#FFEB3B':pathColor"
+      :stroke-width="inSelect?6:3"
+      stroke-linejoin="round"
+      fill="none"
+      cursor="pointer"></path>
   </g>
 </template>
 
@@ -18,14 +20,23 @@ export default {
       type: Object,
       default: () => {}
     },
-    pahtColor: {
+    pathColor: {
       type: String,
       default: '#b39ddb'
+    },
+    currentPathId: {
+      type: String,
+      default: ''
     }
   },
   data () {
     return {
       currentPath: null
+    }
+  },
+  computed: {
+    inSelect () {
+      return this.currentPathId === this.path.id
     }
   },
   watch: {

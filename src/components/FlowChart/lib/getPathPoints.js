@@ -1,19 +1,19 @@
-export default function(rects) {
+export default function(nodes) {
   const pointMap = {}
   const pathPoints = []
-  rects.forEach(rect => {
-    pointMap[rect.id] = {
+  nodes.forEach(node => {
+    pointMap[node.id] = {
       entry: {
-        x: rect.x + rect.width / 2,
-        y: rect.y,
+        x: node.x + node.width / 2,
+        y: node.y,
         vector: {
           x: 0,
           y: -1
         }
       },
       output: {
-        x: rect.x + rect.width / 2,
-        y: rect.y + rect.height,
+        x: node.x + node.width / 2,
+        y: node.y + node.height,
         vector: {
           x: 0,
           y: 1
@@ -21,11 +21,13 @@ export default function(rects) {
       }
     }
   })
-  rects.forEach(rect => {
-    if (rect.prevId) {
+  nodes.forEach(node => {
+    if (node.prevId) {
       pathPoints.push({
-        start: pointMap[rect.prevId].output,
-        end: pointMap[rect.id].entry
+        start: pointMap[node.prevId].output,
+        end: pointMap[node.id].entry,
+        prevId: node.prevId,
+        id: node.id
       })
     }
   })

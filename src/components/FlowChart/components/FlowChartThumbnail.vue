@@ -4,8 +4,9 @@
       :style="boxStyle"
       class="flow-chart-thumbnail_box">
       <div
-          class="flow-chart-thumbnail_view"
-          :style="style"></div>
+        class="flow-chart-thumbnail_view"
+        :style="style">
+      </div>
     </div>
   </div>
 </template>
@@ -84,5 +85,6 @@ export default {
 .flow-chart-thumbnail_view {
   position: absolute;
   background-color: rgba(255, 255, 255, 0.8);
+  outline: thin solid #FFEB3B;
 }
 </style>
