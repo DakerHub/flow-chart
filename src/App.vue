@@ -1,10 +1,16 @@
 <template>
   <div id="app">
     <FlowChart
-      style="border:thin solid #1a237e;height:640px;width:640px;"
+      style="border:thin solid #1a237e;height:500px;width:600px;"
       :value="rects"
+      :width="600"
+      :height="500"
+      :maxWidth="1200"
+      :maxHeight="500"
       path-color="#4CAF50"
+      :show-grid="showGrid"
       :tools="['thumbnail', 'resetScale']"
+      :use-router="useRouter"
       @delete-path="handleDeletePath"
       @delete-node="handleDeleteNode">
       <template slot-scope="{node}" slot="content">
@@ -48,6 +54,12 @@
     <button
       style="position:fixed;right:10px;top:10px;"
       @click="addRandom">添加</button>
+    <button
+      style="position:fixed;right:10px;top:40px;"
+      @click="showGrid=!showGrid">网格</button>
+    <button
+      style="position:fixed;right:10px;top:70px;"
+      @click="useRouter=!useRouter">{{useRouter?'使用连线算法':'使用路由算法'}}</button>
   </div>
 </template>
 
@@ -64,7 +76,9 @@ export default {
   data() {
     return {
       rects: dataFormatted,
-      nodes: data.data.todoList
+      nodes: data.data.todoList,
+      showGrid: false,
+      useRouter: true
     }
   },
   filters: {
@@ -98,7 +112,9 @@ export default {
         y: 0,
         height: 60,
         width: 200,
-        text: text
+        text: text,
+        borderColor: '#FF4081',
+        prevId: ''
       })
     },
     formatNodes() {

@@ -10,11 +10,13 @@
       @mousewheel="handleMousewheel"
       @click.left="handleContainerClick">
       <FlowChartGrid
-        :row="50"
-        :col="50"
+        v-if="showGrid"
+        :row="row"
+        :col="col"
         :maxWidth="maxWidth"
         :maxHeight="maxHeight"
-        :blocks="blocks"></FlowChartGrid>
+        :blocks="blocks"
+        :path="path"></FlowChartGrid>
 
       <FlowChartPath
         class="flow-chart-path"
@@ -24,6 +26,13 @@
         :scale="scale"
         :path-color="pathColor"
         :current-path-id="currentPathId"
+        :grid="grid"
+        :row="row"
+        :col="col"
+        :unit-x="unitX"
+        :unit-y="unitY"
+        :use-router="useRouter"
+        @update-path="handleUpdatePath"
         @click.native.stop="handleClickPath(item)"></FlowChartPath>
 
       <FlowChartNode
@@ -35,6 +44,8 @@
         :scale="scale"
         :view-offse-x="svgOffsetX"
         :view-offse-y="svgOffsetY"
+        :max-width="maxWidth"
+        :max-height="maxHeight"
         :is-link-handler="item.isLinkHandler"
         :current-node-id="currentNodeId"
         @create-placeholder="createPlaceholder"
@@ -42,7 +53,7 @@
         @link-node="linkNode"
         @in-link-change="val => inLink = val"
         @click.native.stop="handleClickNode(item)"
-        @node-position-change="nodePositionChange">
+        @node-change="nodeChange">
         <slot :node="item" name="content" pointer-events="none"></slot>
       </FlowChartNode>
     </svg>
@@ -65,6 +76,10 @@
         v-if="tools.includes('resetScale')"
         class="flow-chart-tool flow-chart-reset-scale"
         @click="handleResetScale">重置缩放</button>
+
+      <div
+        v-if="tools.includes('mousePosition')"
+        class="flow-chart-tool flow-chart-mouse-position">x: {{ currentMousePostion.x }}，y: {{ currentMousePostion.y }}</div>
     </div>
   </div>
 </template>
@@ -75,7 +90,9 @@ import FlowChartPath from './components/FlowChartPath'
 import FlowChartThumbnail from './components/FlowChartThumbnail'
 import FlowChartGrid from './components//FlowChartGrid'
 import getPathPoints from './lib/getPathPoints.js'
-import Grid from '../../utils/Grid.js'
+import Grid from './lib/Grid.js'
+import limitRange from './lib/limitRange.js'
+import clonedeep from 'lodash.clonedeep'
 
 export default {
   name: 'FlowChart',
@@ -104,9 +121,25 @@ export default {
       type: Number,
       default: 1000
     },
+    row: {
+      type: Number,
+      default: 50
+    },
+    col: {
+      type: Number,
+      default: 50
+    },
+    showGrid: {
+      type: Boolean,
+      default: false
+    },
+    useRouter: {
+      type: Boolean,
+      default: false
+    },
     tools: {
       type: Array,
-      default: () => ['thumbnail', 'resetScale']
+      default: () => ['thumbnail', 'resetScale', 'mousePosition']
     }
   },
   components: {
@@ -127,28 +160,56 @@ export default {
       currentPathId: '',
       currentNodeId: '',
       blocks: [],
-      grid: null
+      grid: null,
+      unitX: this.maxWidth / this.col,
+      unitY: this.maxHeight / this.row,
+      path: [],
+      currentMouseX: 0,
+      currentMouseY: 0
     }
   },
   watch: {
     value: {
       immediate: true,
       handler(val) {
-        this.nodes = val
+        const nodes = clonedeep(val)
+        nodes.forEach(node => {
+          const nodePositionLimited = limitRange(node, 0, 0, this.maxWidth, this.maxHeight)
+          Object.assign(node, nodePositionLimited)
+        })
+        this.nodes = nodes
       }
     }
   },
   computed: {
     paths() {
       return getPathPoints(this.nodes)
+    },
+    currentMousePostion () {
+      return {
+        x: ((this.currentMouseX + this.svgOffsetX) * this.scale).toFixed(0),
+        y: ((this.currentMouseY + this.svgOffsetY) * this.scale).toFixed(0)
+      }
     }
   },
   created() {
-    this.grid = new Grid(50, 50, this.maxWidth, this.maxHeight)
+    this.grid = new Grid(this.row, this.col, this.maxWidth, this.maxHeight)
     this.blocks = this.grid.addBlocks(this.nodes)
   },
   mounted() {
     this.$svgContainer = this.$el.querySelector('.svg-container')
+
+    const recodeMouse = e => {
+      this.currentMouseX = e.offsetX
+      this.currentMouseY = e.offsetY
+    }
+
+    this.$svgContainer.addEventListener('mousemove', recodeMouse)
+    
+    this.$once('hook:beforeDestroy', function () {
+      this.$svgContainer.removeEventListener('mousemove', recodeMouse)
+    })
+    
     this.bindHotKey()
   },
   methods: {
@@ -162,7 +223,7 @@ export default {
       }
     },
     bindHotKey() {
-      document.addEventListener('keyup', e => {
+      const bindKey = e => {
         if (e.key === 'Delete') {
           if (this.currentPathId) {
             return this.deleteCurrentPath()
@@ -171,6 +232,27 @@ export default {
             return this.deleteCurrentNode()
           }
         }
+        if (this.currentNodeId) {
+          const node = this.nodes.find(n => n.id === this.currentNodeId)
+          if (node && e.key === 'ArrowLeft' && node.x > 0) {
+            node.x--
+          }
+          if (node && e.key === 'ArrowRight' && node.x < this.maxWidth - node.width - 1) {
+            node.x++
+          }
+          if (node && e.key === 'ArrowUp' && node.y > 0) {
+            node.y--
+          }
+          if (node && e.key === 'ArrowDown' && node.y < this.maxHeight - node.height - 1) {
+            node.y++
+          }
+          this.nodeChange(node)
+        }
+      }
+      document.addEventListener('keyup', bindKey)
+
+      this.$once('hook:beforeDestroy', function () {
+        this.$svgContainer.removeEventListener('mousemove', bindKey)
       })
     },
     deleteCurrentPath() {
@@ -189,10 +271,14 @@ export default {
         targetNode.prevId = currentNodeId
       }
     },
-    nodePositionChange(node) {
-      console.log(node)
-      // this.grid.clearBlocks()
-      this.blocks = this.grid.addBlocks([node])
+    nodeChange(node) {
+      this.grid.clearBlocks()
+      const nodes = clonedeep(this.nodes)
+      const idx = nodes.findIndex(n => n.id === node.id)
+      nodes[idx] = clonedeep(node)
+      this.blocks = this.grid.addBlocks(nodes)
+
+      this.nodes = nodes
     },
     handleMousewheel(e) {
       if (!(this.scale >= 0.5 && this.scale <= 2)) return
@@ -224,36 +310,33 @@ export default {
 
       const $svgContainer = this.$svgContainer
 
-      const handleMouseUp = () => {
-        this.inGrab = false
-        $svgContainer.removeEventListener('mousemove', handleMouseMove)
-        $svgContainer.removeEventListener('mouseup', handleMouseUp)
-      }
-
       const handleMouseMove = e => {
         const { offsetX, offsetY } = e
 
         let targetX = oriSvgOffsetX + oriOffsetX - offsetX
         let targetY = oriSvgOffsetY + oriOffsetY - offsetY
 
-        if ((targetX + this.width) * this.scale > this.maxWidth) {
-          targetX = this.maxWidth / this.scale - this.width
-        }
-        if ((targetY + this.height) * this.scale > this.maxHeight) {
-          targetY = this.maxHeight / this.scale - this.height
-        }
-        if (targetX * this.scale < 0) {
-          targetX = 0
-        }
-        if (targetY * this.scale < 0) {
-          targetY = 0
-        }
-        this.svgOffsetX = targetX
-        this.svgOffsetY = targetY
+        const positionLimited = limitRange({
+          x: targetX,
+          y: targetY,
+          width: this.width,
+          height: this.height
+        }, 0, 0, this.maxWidth / this.scale, this.maxHeight / this.scale)
+   
+        this.svgOffsetX = positionLimited.x
+        this.svgOffsetY = positionLimited.y
+      }
+
+      const handleMoveEnd = () => {
+        this.inGrab = false
+        $svgContainer.removeEventListener('mousemove', handleMouseMove)
+        $svgContainer.removeEventListener('mouseup', handleMoveEnd)
+        $svgContainer.removeEventListener('mouseleave', handleMoveEnd)
       }
 
       $svgContainer.addEventListener('mousemove', handleMouseMove)
-      $svgContainer.addEventListener('mouseup', handleMouseUp)
+      $svgContainer.addEventListener('mouseup', handleMoveEnd)
+      $svgContainer.addEventListener('mouseleave', handleMoveEnd)
     },
     handleClickPath(item) {
       this.currentPathId = item.id
@@ -271,6 +354,8 @@ export default {
       this.scale = 1
       this.svgOffsetX = 0
       this.svgOffsetY = 0
+    },
+    handleUpdatePath () {
     }
   }
 }
@@ -303,5 +388,8 @@ export default {
 }
 .flow-chart-reset-scale:active {
   background-color: rgba(0, 0, 0, 0.2);
+}
+.flow-chart-mouse-position{
+  font-size: 12px;
 }
 </style>

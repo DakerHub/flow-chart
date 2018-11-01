@@ -15,14 +15,14 @@
         fill="rgba(255,255,255,0)"
         transform="translate(-3, -3)"></rect>
     </g>
-    <g v-if="isLinkHandler">
+    <!-- <g v-if="isLinkHandler">
       <circle
         :r="8*scale"
         fill="#616161"
         pointer-events="none"></circle>
-    </g>
+    </g> -->
     <g
-      v-else
+      v-if="!isLinkHandler"
       style="user-select: none;"
       cursor="move"
       @mousedown.left.stop="e => handleMouseDown(e, currentNode)">
@@ -53,6 +53,8 @@
 </template>
 
 <script>
+import limitRange from './../lib/limitRange.js'
+
 export default {
   name: 'FlowChartNode',
   props: {
@@ -83,6 +85,14 @@ export default {
     viewOffseY: {
       type: Number,
       default: 0
+    },
+    maxWidth: {
+      type: Number,
+      default: 0
+    },
+    maxHeight: {
+      type: Number,
+      default: 0
     }
   },
   data() {
@@ -98,8 +108,9 @@ export default {
   watch: {
     node: {
       immediate: true,
+      deep: true,
       handler(node) {
-        this.currentNode = node
+        this.currentNode = Object.assign({}, node)
       }
     }
   },
@@ -147,10 +158,11 @@ export default {
 
       const $svgContainer = this.$parent.$svgContainer
 
-      const handleMouseUp = () => {
-        this.$emit('node-position-change', currentNode)
+      const handleMoveEnd = () => {
+        this.$emit('node-change', currentNode)
         $svgContainer.removeEventListener('mousemove', handleMouseMove)
-        $svgContainer.removeEventListener('mouseup', handleMouseUp)
+        $svgContainer.removeEventListener('mouseup', handleMoveEnd)
+        $svgContainer.removeEventListener('mouseleave', handleMoveEnd)
       }
 
       const handleMouseMove = e => {
@@ -158,12 +170,23 @@ export default {
       }
 
       $svgContainer.addEventListener('mousemove', handleMouseMove)
-      $svgContainer.addEventListener('mouseup', handleMouseUp)
+      $svgContainer.addEventListener('mouseup', handleMoveEnd)
+      $svgContainer.addEventListener('mouseleave', handleMoveEnd)
     },
     handleMouseMove(e, currentNode, offset) {
       const { offsetX, offsetY } = e
-      currentNode.x = (offsetX + offset.x) * this.scale
-      currentNode.y = (offsetY + offset.y) * this.scale
+      const { width, height } = currentNode
+      const targetX = (offsetX + offset.x) * this.scale
+      const targetY = (offsetY + offset.y) * this.scale
+
+      const nodePositionLimited = limitRange({
+        x: targetX,
+        y: targetY,
+        width,
+        height
+      }, 0, 0, this.maxWidth, this.maxHeight)
+
+      Object.assign(currentNode, nodePositionLimited)
     },
     createPlaceholder(prevId, x, y) {
       const holder = {

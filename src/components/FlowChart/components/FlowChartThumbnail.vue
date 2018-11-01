@@ -48,24 +48,32 @@ export default {
     return {}
   },
   computed: {
-    style() {
-      const width = (100 * this.viewWidth) / this.maxWidth
-      const height = (100 * this.viewHeight) / this.maxHeight
-      const top = (100 * this.offsetY * this.scale) / this.maxHeight
-      const left = (100 * this.offsetX * this.scale) / this.maxWidth
-      return {
-        width: `${width * this.scale}px`,
-        height: `${height * this.scale}px`,
-        top: `${top}px`,
-        left: `${left}px`
-      }
-    },
     boxStyle() {
-      const width = 100
-      const height = (100 * this.maxHeight) / this.maxWidth
+      let width = 100
+      let height = 100
+      if (this.maxWidth > this.maxHeight) {
+        height = (100 * this.maxHeight) / this.maxWidth
+      } else {
+        width = (100 * this.maxWidth) / this.maxHeight
+      }
       return {
         width: `${width}px`,
         height: `${height}px`
+      }
+    },
+    style() {
+      const { width, height } = this.boxStyle
+      const boxWidth = Number.parseInt(width)
+      const boxHeight = Number.parseInt(height)
+      const thumbWidth = (boxWidth * this.viewWidth) / this.maxWidth
+      const thumbHeight = (boxHeight * this.viewHeight) / this.maxHeight
+      const thumbTop = (boxHeight * this.offsetY * this.scale) / this.maxHeight
+      const thumbLeft = (boxWidth * this.offsetX * this.scale) / this.maxWidth
+      return {
+        width: `${thumbWidth * this.scale}px`,
+        height: `${thumbHeight * this.scale}px`,
+        top: `${thumbTop}px`,
+        left: `${thumbLeft}px`
       }
     }
   }
@@ -77,6 +85,9 @@ export default {
   width: 100px;
   height: 100px;
   border: thin solid #ccc;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 .flow-chart-thumbnail_box {
   position: relative;

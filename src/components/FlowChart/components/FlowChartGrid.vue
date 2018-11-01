@@ -9,6 +9,15 @@
      :y="item.row * unitY"
      fill="#999">
     </rect>
+    <rect
+     v-for="(item, index) in path"
+     :key="'path'+index"
+     :width="unitX"
+     :height="unitY"
+     :x="item[0] * unitX"
+     :y="item[1] * unitY"
+     fill="#4CAF50">
+    </rect>
     <line
       v-for="index in row"
       :key="'row'+index"
@@ -51,6 +60,10 @@ export default {
       default: 0
     },
     blocks: {
+      type: Array,
+      default: () => []
+    },
+    path: {
       type: Array,
       default: () => []
     }
